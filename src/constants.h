@@ -13,6 +13,7 @@ const static std::string kShape = "shape";
 const static std::string kFloat32 = "float32";
 const static std::string kFloat64 = "float64";
 const static std::string kInt32 = "int32";
+const static std::string kInt64 = "int64";
 
 Napi::Object Init(Napi::Env env, Napi::Object exports);
 } // namespace constants

@@ -2,14 +2,16 @@
 export const float32: number;
 export const float64: number;
 export const int32: number;
+export const int64: number;
 
 export interface ObjectTensor {
   data: Float32Array|Float64Array|Int32Array;
   shape: number[];
+  dtype: number;
 }
 
 export class Tensor {
-  static fromObject({data, shape}: ObjectTensor): Tensor;
+  static fromObject({data, shape, dtype}: ObjectTensor): Tensor;
   toObject(): ObjectTensor;
   toString(): string;
 }

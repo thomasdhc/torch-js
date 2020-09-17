@@ -30,6 +30,8 @@ function typedArrayType(dtype: number) {
       return Float64Array;
     case torch.int32:
       return Int32Array;
+    case torch.int64:
+      return Int64Array;
     default:
       throw new TypeError('Unsupported dtype');
   }
@@ -43,9 +45,13 @@ export function tensor(
   if (Array.isArray(data)) {
     const array_and_shape = flattenArray(data);
     const typed_array = new (typedArrayType(dtype))(array_and_shape.data);
+    if (shape === undefined) {
+        shape = array_and_shape.shape;
+    }
     return torch.Tensor.fromObject({
       data: typed_array,
-      shape: array_and_shape.shape,
+      shape: shape,
+      dtype: dtype,
     });
   }
   if (shape === undefined) {
@@ -54,5 +60,6 @@ export function tensor(
   return torch.Tensor.fromObject({
     data: data,
     shape: shape,
+    dtype: dtype,
   });
 }

@@ -83,17 +83,20 @@ Napi::Value Tensor::toObject(const Napi::CallbackInfo &info) {
 
 Napi::Value Tensor::fromObject(const Napi::CallbackInfo &info) {
   auto env = info.Env();
+  // Is it my responsibility to deallocate these? Use a scope?
   auto obj = info[0].As<Napi::Object>();
   auto data = obj.Get(kData).As<Napi::TypedArray>();
   auto shape = obj.Get(kShape).As<ShapeArrayType>();
-  auto data_type = data.TypedArrayType();
+  auto dtype = obj.Get(kDtype).As<Napi::Number>().Int32Value();
 
-  switch (data_type) {
-  case napi_float32_array:
+  switch (dtype) {
+  case static_cast<int32_t>(torch::kFloat32):
     return arrayToTensor<float>(env, data, shape);
-  case napi_float64_array:
+  case static_cast<int32_t>(torch::kFloat64):
     return arrayToTensor<double>(env, data, shape);
-  case napi_int32_array:
+  case static_cast<int32_t>(torch::kInt32):
+    return arrayToTensor<int32_t>(env, data, shape);
+  case static_cast<int32_t>(torch::kInt64):
     return arrayToTensor<int32_t>(env, data, shape);
   default:
     throw Napi::TypeError::New(env, "Unsupported type");
