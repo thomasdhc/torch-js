@@ -13,7 +13,7 @@ Napi::Value tensorToArray(Napi::Env env, const torch::Tensor &tensor) {
   Napi::EscapableHandleScope scope(env);
   assert(tensor.is_contiguous());
   auto typed_array = Napi::TypedArrayOf<T>::New(env, tensor.numel());
-  memcpy(typed_array.Data(), tensor.data<T>(), sizeof(T) * tensor.numel());
+  memcpy(typed_array.Data(), tensor.data_ptr(), sizeof(T) * tensor.numel());
   auto shape_array = tensorShapeToArray(env, tensor);
   auto obj = Napi::Object::New(env);
   obj.Set(kData, typed_array);
@@ -29,7 +29,7 @@ Napi::Value arrayToTensor(Napi::Env env, const Napi::TypedArray &data,
   auto shape = shapeArrayToVector(shape_array);
   torch::TensorOptions options(scalarType<T>());
   auto torch_tensor = torch::empty(shape, options);
-  memcpy(torch_tensor.data<T>(), data_ptr, sizeof(T) * torch_tensor.numel());
+  memcpy(torch_tensor.data_ptr(), data_ptr, sizeof(T) * torch_tensor.numel());
   return scope.Escape(Tensor::FromTensor(env, torch_tensor));
 }
 } // namespace
@@ -83,11 +83,11 @@ Napi::Value Tensor::toObject(const Napi::CallbackInfo &info) {
 
 Napi::Value Tensor::fromObject(const Napi::CallbackInfo &info) {
   auto env = info.Env();
-  Napi::HandleScope scope(env);
   auto obj = info[0].As<Napi::Object>();
   auto data = obj.Get(kData).As<Napi::TypedArray>();
   auto shape = obj.Get(kShape).As<ShapeArrayType>();
   auto data_type = data.TypedArrayType();
+
   switch (data_type) {
   case napi_float32_array:
     return arrayToTensor<float>(env, data, shape);

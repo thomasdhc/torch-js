@@ -39,7 +39,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
         Napi::ObjectWrap<Tensor>::Unwrap(info[i].As<Napi::Object>());
     inputs.push_back(tensor->tensor());
   }
-  auto outputs = module_->forward(inputs);
+  auto outputs = module_.forward(inputs);
   // TODO: Support other type of IValue
   assert(outputs.isTensor());
   return scope.Escape(Tensor::FromTensor(info.Env(), outputs.toTensor()));

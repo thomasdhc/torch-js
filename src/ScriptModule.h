@@ -22,7 +22,7 @@ public:
 
 private:
   static Napi::FunctionReference constructor;
-  std::shared_ptr<torch::jit::script::Module> module_;
+  torch::jit::script::Module module_;
   std::string path_;
   /**
    * This can be called with a variable number of input Tensors.
