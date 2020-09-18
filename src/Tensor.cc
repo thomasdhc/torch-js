@@ -30,6 +30,9 @@ Napi::Value arrayToTensor(Napi::Env env, const Napi::TypedArray &data,
   torch::TensorOptions options(scalarType<T>());
   auto torch_tensor = torch::empty(shape, options);
   memcpy(torch_tensor.data_ptr(), data_ptr, sizeof(T) * torch_tensor.numel());
+  // TODO add better support for kInt64
+  // Currently casting all tensors to kInt64
+  torch_tensor = torch_tensor.to(torch::kInt64);
   return scope.Escape(Tensor::FromTensor(env, torch_tensor));
 }
 } // namespace
