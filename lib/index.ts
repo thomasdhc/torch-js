@@ -31,7 +31,7 @@ function typedArrayType(dtype: number) {
     case torch.int32:
       return Int32Array;
     case torch.int64:
-      return Int64Array;
+      return Int32Array;
     default:
       throw new TypeError('Unsupported dtype');
   }
