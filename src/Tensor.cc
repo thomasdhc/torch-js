@@ -79,6 +79,8 @@ Napi::Value Tensor::toObject(const Napi::CallbackInfo &info) {
     return tensorToArray<double>(env, tensor_);
   case torch::ScalarType::Int:
     return tensorToArray<int32_t>(env, tensor_);
+  case torch::ScalarType::Long:
+    return tensorToArray<int32_t>(env, tensor_.to(torch::kInt32));
   default:
     throw Napi::TypeError::New(env, "Unsupported type");
   }
