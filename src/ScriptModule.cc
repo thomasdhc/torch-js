@@ -30,7 +30,6 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
 Napi::FunctionReference ScriptModule::constructor;
 
 Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
-  Napi::EscapableHandleScope scope(info.Env());
   auto len = info.Length();
   std::vector<torch::jit::IValue> inputs;
   // TODO: Support other type of IValue, e.g., list
@@ -42,7 +41,13 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   auto outputs = module_.forward(inputs);
   // TODO: Support other type of IValue
   assert(outputs.isTensor());
-  return scope.Escape(Tensor::FromTensor(info.Env(), outputs.toTensor()));
+  torch::Tensor tensor = outputs.toTensor();
+  Napi::Env env = info.Env();
+
+  auto typed_array = Napi::TypedArrayOf<float>::New(env, tensor.numel());
+  memcpy(typed_array.Data(), tensor.data_ptr(), sizeof(float) * tensor.numel());
+  return typed_array;
+  // return scope.Escape(Tensor::FromTensor(info.Env(), outputs.toTensor()));
 }
 
 Napi::Value ScriptModule::toString(const Napi::CallbackInfo &info) {
