@@ -25,6 +25,10 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
   Napi::String value = info[0].As<Napi::String>();
   path_ = value;
   module_ = torch::jit::load(value);
+  module.to(torch::kCPU);
+  module.eval();
+  at::init_num_threads();
+  torch::set_num_threads(16);
 }
 
 Napi::FunctionReference ScriptModule::constructor;
