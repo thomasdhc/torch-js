@@ -25,10 +25,17 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
   Napi::String value = info[0].As<Napi::String>();
   path_ = value;
   module_ = torch::jit::load(value);
-  module_.to(torch::kCPU);
+  torch::DeviceType device_type;
+  if (torch::cuda::is_available()) {
+      device_type = torch::kCUDA;
+  } else {
+      device_type = torch::kCPU;
+  }
+  torch::Device device(device_type);
+  model.to(device);
   module_.eval();
-  at::init_num_threads();
-  torch::set_num_threads(16);
+  // at::init_num_threads();
+  // torch::set_num_threads(16);
 }
 
 Napi::FunctionReference ScriptModule::constructor;
