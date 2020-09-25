@@ -32,7 +32,7 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
       device_type = torch::kCPU;
   }
   torch::Device device(device_type);
-  model.to(device);
+  module_.to(device);
   module_.eval();
   // at::init_num_threads();
   // torch::set_num_threads(16);
