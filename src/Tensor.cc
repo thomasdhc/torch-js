@@ -12,7 +12,6 @@ template <typename T>
 Napi::Value tensorToArray(Napi::Env env, const torch::Tensor &tensor) {
   Napi::EscapableHandleScope scope(env);
   assert(tensor.is_contiguous());
-  tensor = tensor.to(torch::kCPU);
   auto typed_array = Napi::TypedArrayOf<T>::New(env, tensor.numel());
   memcpy(typed_array.Data(), tensor.data_ptr(), sizeof(T) * tensor.numel());
   auto shape_array = tensorShapeToArray(env, tensor);
