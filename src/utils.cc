@@ -43,7 +43,7 @@ std::vector<int64_t> napiArrayToVector(const Napi::TypedArray &data) {
   std::vector<int64_t> dataVector;
   for (decltype(array_len) i = 0; i < array_len; ++i) {
     Napi::HandleScope scope(data.Env());
-    sizes.push_back(static_cast<Napi::Value>(data[i])
+    dataVector.push_back(static_cast<Napi::Value>(data[i])
                         .As<Napi::Number>()
                         .Int64Value());
   }
