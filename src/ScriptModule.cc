@@ -31,7 +31,7 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
   } else {
       device_type = torch::kCPU;
   }
-  torch::Device device(device_type);
+  torch::Device device(torch::kCUDA);
   module_.to(device);
   module_.eval();
   // at::init_num_threads();
@@ -44,6 +44,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   auto len = info.Length();
   std::vector<torch::jit::IValue> inputs;
   // TODO: Support other type of IValue, e.g., list
+  torch::Device device(torch::kCUDA);
   for (size_t i = 0; i < len; ++i) {
     Tensor *tensor =
         Napi::ObjectWrap<Tensor>::Unwrap(info[i].As<Napi::Object>());
@@ -52,7 +53,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   auto outputs = module_.forward(inputs);
   // TODO: Support other type of IValue
   assert(outputs.isTensor());
-  torch::Tensor tensor = outputs.toTensor();
+  torch::Tensor tensor = outputs.toTensor().to(torch::kCPU);
   Napi::Env env = info.Env();
 
   auto typed_array = Napi::TypedArrayOf<float>::New(env, tensor.numel());

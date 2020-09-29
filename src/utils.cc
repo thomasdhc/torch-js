@@ -38,6 +38,18 @@ std::vector<int64_t> shapeArrayToVector(const ShapeArrayType &size_array) {
   return sizes;
 }
 
+std::vector<int64_t> napiArrayToVector(const Napi::TypedArray &data) {
+  auto array_len = data.ElementLength();
+  std::vector<int64_t> dataVector;
+  for (decltype(array_len) i = 0; i < array_len; ++i) {
+    Napi::HandleScope scope(data.Env());
+    sizes.push_back(static_cast<Napi::Value>(data[i])
+                        .As<Napi::Number>()
+                        .Int64Value());
+  }
+  return dataVector;
+}
+
 template <> torch::ScalarType scalarType<float>() { return torch::kFloat32; }
 template <> torch::ScalarType scalarType<double>() { return torch::kFloat64; }
 template <> torch::ScalarType scalarType<int32_t>() { return torch::kInt32; }

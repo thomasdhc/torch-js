@@ -12,6 +12,7 @@ template <typename T>
 Napi::Value tensorToArray(Napi::Env env, const torch::Tensor &tensor) {
   Napi::EscapableHandleScope scope(env);
   assert(tensor.is_contiguous());
+  tensor = tensor.to(torch::kCPU);
   auto typed_array = Napi::TypedArrayOf<T>::New(env, tensor.numel());
   memcpy(typed_array.Data(), tensor.data_ptr(), sizeof(T) * tensor.numel());
   auto shape_array = tensorShapeToArray(env, tensor);
@@ -27,12 +28,15 @@ Napi::Value arrayToTensor(Napi::Env env, const Napi::TypedArray &data,
   Napi::EscapableHandleScope scope(env);
   auto *data_ptr = data.As<Napi::TypedArrayOf<T>>().Data();
   auto shape = shapeArrayToVector(shape_array);
-  torch::TensorOptions options(scalarType<T>());
-  auto torch_tensor = torch::empty(shape, options);
-  memcpy(torch_tensor.data_ptr(), data_ptr, sizeof(T) * torch_tensor.numel());
+
+  auto dataVector = napiArrayToVector(data);
   // TODO add better support for kInt64
   // Currently casting all tensors to kInt64
-  torch_tensor = torch_tensor.to(torch::kInt64);
+  auto options = torch::TensorOptions()
+    .dtype(torch::kInt64);
+  auto torch_tensor = torch::from_blob(dataVector.data(), shape, options);
+  torch::Device device(torch::kCUDA);
+  torch_tensor = torch_tensor.to(device);
   return scope.Escape(Tensor::FromTensor(env, torch_tensor));
 }
 } // namespace
