@@ -114,12 +114,9 @@ Napi::Value Tensor::fromObject(const Napi::CallbackInfo &info) {
 
 Napi::Value Tensor::fromImagePath(const Napi::CallbackInfo &info) {
   auto env = info.Env();
-  auto source = info[0].As<Napi::String>().string();
+  Napi::EscapableHandleScope scope(env);
+  auto source = info[0].As<Napi::String>();
   cv::Mat img = cv::imread(source);
-  if (img.empty()) {
-    std::cerr << "Error loading the image!\n";
-    return -1;
-  }
   cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
   img.convertTo(img, CV_32FC3, 1.0f / 255.0f);
   auto tensor_img = torch::from_blob(img.data, {1, img.rows, img.cols, img.channels()}).to(torch::kCUDA);
