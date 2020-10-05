@@ -11,6 +11,8 @@ endif()
 
 find_package(Torch REQUIRED)
 
+add_subdirectory(decode_image)
+
 include_directories(${CMAKE_JS_INC})
 file(GLOB SOURCE_FILES "src/*.cc" "src/*.h")
 add_library(${PROJECT_NAME} SHARED ${SOURCE_FILES})
@@ -21,5 +23,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/node_mod
 
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 target_link_libraries(${PROJECT_NAME} "${TORCH_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} -Wl,--no-as-needed decode_image)
 
 add_definitions( -Wall -O2 -fexceptions )
