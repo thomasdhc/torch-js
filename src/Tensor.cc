@@ -46,7 +46,6 @@ Napi::Object Tensor::Init(Napi::Env env, Napi::Object exports) {
                   {
                       InstanceMethod("toString", &Tensor::toString),
                       InstanceMethod("toObject", &Tensor::toObject),
-                      StaticMethod("fromImagePath", &Tensor::fromImagePath),
                       StaticMethod("fromObject", &Tensor::fromObject),
                   });
 
@@ -111,18 +110,4 @@ Napi::Value Tensor::fromObject(const Napi::CallbackInfo &info) {
     throw Napi::TypeError::New(env, "Unsupported type");
   }
 }
-
-Napi::Value Tensor::fromImagePath(const Napi::CallbackInfo &info) {
-  auto env = info.Env();
-  Napi::EscapableHandleScope scope(env);
-  auto source = info[0].As<Napi::String>();
-  cv::Mat img = cv::imread(source);
-  cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-  img.convertTo(img, CV_32FC3, 1.0f / 255.0f);
-  auto tensor_img = torch::from_blob(img.data, {1, img.rows, img.cols, img.channels()}).to(torch::kCUDA);
-  tensor_img = tensor_img.permute({0, 3, 1, 2}).contiguous();
-  tensor_img = tensor_img.to(torch::kHalf);
-  return scope.Escape(Tensor::FromTensor(env, tensor_img));
-}
-
 } // namespace torchjs

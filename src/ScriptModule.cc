@@ -45,8 +45,14 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   std::vector<torch::jit::IValue> inputs;
   // TODO: Support other type of IValue, e.g., list
   torch::Device device(torch::kCUDA);
-  auto fileBuffer = info[0].as<Napi::String>().Utf8Value();
-  inputs.push_back(fileBuffer);
+  auto fileBuffer = info[0].As<Napi::Buffer<char>>();
+  auto array_len = fileBuffer.ElementLength();
+  std::vector<uint8_t> dataVector;
+  for (decltype(array_len) i = 0; i < array_len; ++i) {
+    dataVector.push_back(fileBuffer[i]);
+  }
+  std::string fileBufferString(dataVector.begin(), dataVector.end());
+  inputs.push_back(fileBufferString);
   // for (size_t i = 0; i < len; ++i) {
   //   Tensor *tensor =
   //       Napi::ObjectWrap<Tensor>::Unwrap(info[i].As<Napi::Object>());

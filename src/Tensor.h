@@ -22,7 +22,6 @@ private:
   Napi::Value toString(const Napi::CallbackInfo &);
   Napi::Value toObject(const Napi::CallbackInfo &);
   static Napi::Value fromObject(const Napi::CallbackInfo &);
-  static Napi::Value fromImagePath(const Napi::CallbackInfo &);
 };
 
 } // namespace torchjs
