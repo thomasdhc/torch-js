@@ -25,17 +25,14 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
   Napi::String value = info[0].As<Napi::String>();
   path_ = value;
   module_ = torch::jit::load(value);
-  torch::DeviceType device_type;
-  if (torch::cuda::is_available()) {
-      device_type = torch::kCUDA;
-  } else {
-      device_type = torch::kCPU;
-  }
   torch::Device device(torch::kCUDA);
+  module_.to(torch::kHalf);
   module_.to(device);
   module_.eval();
-  // at::init_num_threads();
-  // torch::set_num_threads(16);
+
+  // set number of cpus to use
+  at::init_num_threads();
+  at::set_num_threads(1);
 }
 
 Napi::FunctionReference ScriptModule::constructor;
@@ -58,16 +55,16 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   //       Napi::ObjectWrap<Tensor>::Unwrap(info[i].As<Napi::Object>());
   //   inputs.push_back(tensor->tensor());
   // }
-  auto outputs = module_.forward(inputs);
-  // TODO: Support other type of IValue
-  assert(outputs.isTensor());
-  torch::Tensor tensor = outputs.toTensor().to(torch::kCPU);
+  auto pred = module_.forward(inputs);
+
+  torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor();
+  outputs = outputs.to(torch::kCPU);
+  outputs = outputs.to(torch::kFloat32);
   Napi::Env env = info.Env();
 
-  auto typed_array = Napi::TypedArrayOf<float>::New(env, tensor.numel());
-  memcpy(typed_array.Data(), tensor.data_ptr(), sizeof(float) * tensor.numel());
+  auto typed_array = Napi::TypedArrayOf<float>::New(env, outputs.numel());
+  memcpy(typed_array.Data(), outputs.data_ptr(), sizeof(float) * outputs.numel());
   return typed_array;
-  // return scope.Escape(Tensor::FromTensor(info.Env(), outputs.toTensor()));
 }
 
 Napi::Value ScriptModule::toString(const Napi::CallbackInfo &info) {
