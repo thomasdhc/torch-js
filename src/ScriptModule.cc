@@ -39,9 +39,9 @@ Napi::FunctionReference ScriptModule::constructor;
 
 Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   auto len = info.Length();
+
+  // Convert Node JS buffer to string
   std::vector<torch::jit::IValue> inputs;
-  // TODO: Support other type of IValue, e.g., list
-  torch::Device device(torch::kCUDA);
   auto fileBuffer = info[0].As<Napi::Buffer<char>>();
   auto array_len = fileBuffer.ElementLength();
   std::vector<uint8_t> dataVector;
@@ -50,21 +50,37 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   }
   std::string fileBufferString(dataVector.begin(), dataVector.end());
   inputs.push_back(fileBufferString);
-  // for (size_t i = 0; i < len; ++i) {
-  //   Tensor *tensor =
-  //       Napi::ObjectWrap<Tensor>::Unwrap(info[i].As<Napi::Object>());
-  //   inputs.push_back(tensor->tensor());
-  // }
-  auto pred = module_.forward(inputs);
+
+  torch::IValue pred = module_.forward(inputs);
 
   torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor();
-  outputs = outputs.to(torch::kCPU);
-  outputs = outputs.to(torch::kFloat32);
+
+  torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
+  torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
+  torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
+
+  auto names = pred.toTuple()->elements()[1].toList();
+
   Napi::Env env = info.Env();
 
-  auto typed_array = Napi::TypedArrayOf<float>::New(env, outputs.numel());
-  memcpy(typed_array.Data(), outputs.data_ptr(), sizeof(float) * outputs.numel());
-  return typed_array;
+  Napi::Array classes_array = Napi::Array::New(env, cls.numel());
+  auto boxes_array = Napi::TypedArrayOf<float>::New(env, boxes.numel());
+  auto scores_array = Napi:: TypedArrayOf<float>::New(env, conf.numel());
+
+  // Get class from list of names
+  for ( int i = 0; i < cls.numel(); i++) {
+      Napi::String name = Napi::String::New(env, names.get(cls[i].item<int>()).toStringRef());
+      classes_array[i] = name;
+  }
+
+  memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(float) * boxes.numel());
+  memcpy(scores_array.Data(), conf.data_ptr(), sizeof(float) * conf.numel());
+
+  auto obj = Napi::Object::New(env);
+  obj.Set("classes", classes_array);
+  obj.Set("scores", scores_array);
+  obj.Set("boxes", boxes_array);
+  return obj;
 }
 
 Napi::Value ScriptModule::toString(const Napi::CallbackInfo &info) {
