@@ -55,7 +55,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
 
   torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor()[0];
 
-  torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
+  torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kInt32);
   torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
   torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
 
@@ -64,7 +64,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   Napi::Array classes_array = Napi::Array::New(env, cls.numel());
-  auto boxes_array = Napi::TypedArrayOf<float>::New(env, boxes.numel());
+  auto boxes_array = Napi::TypedArrayOf<int>::New(env, boxes.numel());
   auto scores_array = Napi:: TypedArrayOf<float>::New(env, conf.numel());
 
   // Get class from list of names
@@ -73,7 +73,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
       classes_array[i] = name;
   }
 
-  memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(float) * boxes.numel());
+  memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(int) * boxes.numel());
   memcpy(scores_array.Data(), conf.data_ptr(), sizeof(float) * conf.numel());
 
   auto obj = Napi::Object::New(env);
