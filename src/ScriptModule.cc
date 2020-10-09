@@ -53,7 +53,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
 
   torch::IValue pred = module_.forward(inputs);
 
-  torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor();
+  torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor()[0];
 
   torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
   torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
