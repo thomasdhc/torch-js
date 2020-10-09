@@ -59,6 +59,8 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
   torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
 
+  boxes = boxes / 800;
+
   auto names = pred.toTuple()->elements()[1].toList();
 
   Napi::Env env = info.Env();
