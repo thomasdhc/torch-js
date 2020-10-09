@@ -10,6 +10,7 @@ if (NOT MSVC)
 endif()
 
 find_package(Torch REQUIRED)
+find_package(TorchVision REQUIRED)
 
 add_subdirectory(decode_image)
 
@@ -24,5 +25,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/node_mod
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB})
 target_link_libraries(${PROJECT_NAME} "${TORCH_LIBRARIES}")
 target_link_libraries(${PROJECT_NAME} -Wl,--no-as-needed decode_image)
+target_link_libraries(${PROJECT_NAME} -Wl,--no-as-needed TorchVision::TorchVision)
 
 add_definitions( -Wall -O2 -fexceptions )
