@@ -53,35 +53,44 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
 
   torch::IValue pred = module_.forward(inputs);
 
-  torch::Tensor outputs = pred.toTuple()->elements()[0].toTensor()[0];
-
-  torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
-  torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
-  torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
-
-  boxes = boxes / 800;
-
-  auto names = pred.toTuple()->elements()[1].toList();
+  auto detections = pred.toTuple()->elements()[0];
 
   Napi::Env env = info.Env();
-
-  Napi::Array classes_array = Napi::Array::New(env, cls.numel());
-  auto boxes_array = Napi::TypedArrayOf<float>::New(env, boxes.numel());
-  auto scores_array = Napi:: TypedArrayOf<float>::New(env, conf.numel());
-
-  // Get class from list of names
-  for ( int i = 0; i < cls.numel(); i++) {
-      Napi::String name = Napi::String::New(env, names.get(cls[i].item<int>()).toStringRef());
-      classes_array[i] = name;
-  }
-
-  memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(float) * boxes.numel());
-  memcpy(scores_array.Data(), conf.data_ptr(), sizeof(float) * conf.numel());
-
   auto obj = Napi::Object::New(env);
-  obj.Set("classes", classes_array);
-  obj.Set("scores", scores_array);
-  obj.Set("boxes", boxes_array);
+
+  if (detections.isTensor()) {
+    auto outputs = detections.toTensor()[0]
+    torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
+    torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
+    torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
+
+    auto names = pred.toTuple()->elements()[1].toList();
+
+
+    Napi::Array classes_array = Napi::Array::New(env, cls.numel());
+    auto boxes_array = Napi::TypedArrayOf<float>::New(env, boxes.numel());
+    auto scores_array = Napi:: TypedArrayOf<float>::New(env, conf.numel());
+
+    // Get class from list of names
+    for ( int i = 0; i < cls.numel(); i++) {
+        Napi::String name = Napi::String::New(env, names.get(cls[i].item<int>()).toStringRef());
+        classes_array[i] = name;
+    }
+
+    memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(float) * boxes.numel());
+    memcpy(scores_array.Data(), conf.data_ptr(), sizeof(float) * conf.numel());
+
+    obj.Set("classes", classes_array);
+    obj.Set("scores", scores_array);
+    obj.Set("boxes", boxes_array);
+  } else {
+    Napi::Array classes_array = Napi::Array::New(env, 0);
+    auto boxes_array = Napi::TypedArrayOf<float>::New(env, 0);
+    auto scores_array = Napi:: TypedArrayOf<float>::New(env, 0);
+    obj.Set("classes", classes_array);
+    obj.Set("scores", scores_array);
+    obj.Set("boxes", boxes_array);
+  }
   return obj;
 }
 
