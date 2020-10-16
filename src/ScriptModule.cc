@@ -24,6 +24,7 @@ ScriptModule::ScriptModule(const Napi::CallbackInfo &info)
   Napi::HandleScope scope(info.Env());
   Napi::String value = info[0].As<Napi::String>();
   path_ = value;
+  torch::jit::setGraphExecutorOptimize(false);
   module_ = torch::jit::load(value);
   torch::Device device(torch::kCUDA);
   module_.to(torch::kHalf);
@@ -59,7 +60,7 @@ Napi::Value ScriptModule::forward(const Napi::CallbackInfo &info) {
   auto obj = Napi::Object::New(env);
 
   if (detections.isTensor()) {
-    auto outputs = detections.toTensor()[0]
+    auto outputs = detections.toTensor()[0];
     torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
     torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
     torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
