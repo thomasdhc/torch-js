@@ -10,12 +10,9 @@ Napi::Object ScriptModule::Init(Napi::Env env, Napi::Object exports) {
       DefineClass(env, "ScriptModule",
                   {
                       InstanceMethod("forward", &ScriptModule::forward),
-                      InstanceMethod("forwardBertClassification", &ScriptModule::
-forwardBertClassification),
-                      InstanceMethod("forwardClassification", &ScriptModule::forw
-ardClassification),
-                      InstanceMethod("forwardDetection", &ScriptModule::forwardDe
-tection)
+                      InstanceMethod("forwardBertClassification", &ScriptModule::forwardBertClassification),
+                      InstanceMethod("forwardClassification", &ScriptModule::forwardClassification),
+                      InstanceMethod("forwardDetection", &ScriptModule::forwardDetection)
                       InstanceMethod("toString", &ScriptModule::toString),
                   });
 
