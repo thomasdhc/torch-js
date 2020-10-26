@@ -28,6 +28,9 @@ private:
    * This can be called with a variable number of input Tensors.
    **/
   Napi::Value forward(const Napi::CallbackInfo &info);
+  Napi::Value forwardBertClassification(const Napi::CallbackInfo &info);
+  Napi::Value forwardClassification(const Napi::CallbackInfo &info);
+  Napi::Value forwardDetection(const Napi::CallbackInfo &info);
   Napi::Value toString(const Napi::CallbackInfo &info);
 };
 
