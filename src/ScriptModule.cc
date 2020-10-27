@@ -84,6 +84,8 @@ Napi::Value ScriptModule::forwardBertClassification(const Napi::CallbackInfo &in
 Napi::Value ScriptModule::forwardClassification(const Napi::CallbackInfo &info) {
   std::vector<torch::jit::IValue> inputs;
 
+  torch::NoGradGuard no_grad;
+
   auto fileBuffer = info[0].As<Napi::Buffer<char>>();
   auto array_len = fileBuffer.ElementLength();
   std::vector<uint8_t> dataVector;
