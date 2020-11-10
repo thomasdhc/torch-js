@@ -125,46 +125,35 @@ Napi::Value ScriptModule::forwardDetection(const Napi::CallbackInfo &info) {
   std::string fileBufferString(dataVector.begin(), dataVector.end());
   inputs.push_back(fileBufferString);
 
+  // Hard coded threshold tensor
+  auto thres = torch::tensor({0.6}).to(torch::kCUDA);
+  inputs.push_back(thres);
+
   torch::IValue pred = module_.forward(inputs);
 
-  auto detections = pred.toTuple()->elements()[0];
+  auto bboxes = pred.toTuple()->elements()[0].toTensor().to(torch::kCPU).to(torch::kFloat32);
+  auto scores = pred.toTuple()->elements()[1].toTensor().to(torch::kCPU).to(torch::kFloat32);
+  auto classes = pred.toTuple()->elements()[2].toList().get(0).toList();
 
   Napi::Env env = info.Env();
   auto obj = Napi::Object::New(env);
 
-  if (detections.isTensor()) {
-    auto outputs = detections.toTensor()[0];
-    torch::Tensor boxes = outputs.slice(1, 0, 4).to(torch::kCPU).to(torch::kFloat32);
-    torch::Tensor conf = outputs.select(1, 4).to(torch::kCPU).to(torch::kFloat32);
-    torch::Tensor cls = outputs.select(1, 5).to(torch::kCPU).to(torch::kInt32);
+  Napi::Array classes_array = Napi::Array::New(env, classes.size());
+  auto bboxes_array = Napi::TypedArrayOf<float>::New(env, bboxes.numel());
+  auto scores_array = Napi::TypedArrayOf<float>::New(env, scores.numel());
 
-    auto names = pred.toTuple()->elements()[1].toList();
-
-
-    Napi::Array classes_array = Napi::Array::New(env, cls.numel());
-    auto boxes_array = Napi::TypedArrayOf<float>::New(env, boxes.numel());
-    auto scores_array = Napi:: TypedArrayOf<float>::New(env, conf.numel());
-
-    // Get class from list of names
-    for ( int i = 0; i < cls.numel(); i++) {
-        Napi::String name = Napi::String::New(env, names.get(cls[i].item<int>()).toStringRef());
-        classes_array[i] = name;
-    }
-
-    memcpy(boxes_array.Data(), boxes.data_ptr(), sizeof(float) * boxes.numel());
-    memcpy(scores_array.Data(), conf.data_ptr(), sizeof(float) * conf.numel());
-
-    obj.Set("classes", classes_array);
-    obj.Set("scores", scores_array);
-    obj.Set("boxes", boxes_array);
-  } else {
-    Napi::Array classes_array = Napi::Array::New(env, 0);
-    auto boxes_array = Napi::TypedArrayOf<float>::New(env, 0);
-    auto scores_array = Napi:: TypedArrayOf<float>::New(env, 0);
-    obj.Set("classes", classes_array);
-    obj.Set("scores", scores_array);
-    obj.Set("boxes", boxes_array);
+  for ( int i = 0; i < classes.size(); i++ ) {
+    Napi::String class_name = Napi::String::New(env, classes.get(i).toStringRef());
+    classes_array[i] = class_name;
   }
+
+  memcpy(bboxes_array.Data(), bboxes.data_ptr(), sizeof(float) * bboxes.numel());
+  memcpy(scores_array.Data(), scores.data_ptr(), sizeof(float) * scores.numel());
+
+  obj.Set("classes", classes_array);
+  obj.Set("scores", scores_array);
+  obj.Set("bboxes", bboxes_array);
+
   return obj;
 }
 
